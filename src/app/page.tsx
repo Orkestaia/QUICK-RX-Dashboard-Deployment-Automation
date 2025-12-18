@@ -7,6 +7,7 @@ import { SummaryCards } from '@/components/SummaryCards';
 import { Filters } from '@/components/Filters';
 import { CallTable } from '@/components/CallTable';
 import { CallDetailModal } from '@/components/CallDetailModal';
+import { VapiAnalytics } from '@/components/VapiAnalytics';
 import { Download, RefreshCcw, LayoutDashboard, User } from 'lucide-react';
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwz1RY1pHmXttWbvGqZfLcE9GnixkC8qg2Sp1Gw9RDUF4FaImE21aWm2oLO_MUhJ4UFcVdhVAA_2bo/pub?output=csv";
@@ -178,7 +179,9 @@ export default function Dashboard() {
           failed={metrics.failed}
         />
 
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6">
+        <VapiAnalytics />
+
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6 mt-12">
           <Filters
             search={search}
             onSearchChange={setSearch}
