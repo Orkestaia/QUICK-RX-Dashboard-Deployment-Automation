@@ -1,5 +1,5 @@
 export interface CallRecord {
-    id: string;
+    id?: string;
     timestamp: string;
     call_id: string;
     caller_name: string;
@@ -12,8 +12,8 @@ export interface CallRecord {
     transcript: string;
     recording_url: string;
     summary: string;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export type UserRole = 'admin' | 'viewer';
