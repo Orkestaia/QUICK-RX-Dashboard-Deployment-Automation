@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MetricChart } from './MetricChart';
-import { Clock, Phone, CreditCard, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export const VapiAnalytics = () => {
     const [data, setData] = useState<any[]>([]);
@@ -17,48 +17,45 @@ export const VapiAnalytics = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         queries: [
-                            { table: 'call', column: 'minutesUsed', operation: 'sum', groupBy: ['date'] },
-                            { table: 'call', column: 'id', operation: 'count', groupBy: ['date'] },
-                            { table: 'call', column: 'cost', operation: 'sum', groupBy: ['date'] }
+                            {
+                                name: 'metrics-by-day',
+                                table: 'call',
+                                timeRange: { step: 'day' },
+                                operations: [
+                                    { column: 'duration', operation: 'sum' },
+                                    { column: 'id', operation: 'count' },
+                                    { column: 'cost', operation: 'sum' }
+                                ]
+                            }
                         ]
                     })
                 });
 
                 const result = await response.json();
 
-                // El formato de Vapi Analytics devuelve los resultados por tabla/operación
-                // Necesitamos normalizarlo para Recharts
-                if (result && Array.isArray(result)) {
-                    const minutesData = result[0] || [];
-                    const callsData = result[1] || [];
-                    const costData = result[2] || [];
+                if (result && Array.isArray(result) && result[0]?.result) {
+                    const vapiData = result[0].result;
 
-                    // Crear un mapa por fecha para combinar resultados
-                    const dateMap: any = {};
+                    const chartData = vapiData.map((item: any) => {
+                        const calls = parseInt(item.countId || '0');
+                        const minutes = parseFloat((parseFloat(item.sumDuration || '0')).toFixed(2));
+                        const cost = parseFloat((parseFloat(item.sumCost || '0')).toFixed(2));
 
-                    minutesData.forEach((item: any) => {
-                        if (!dateMap[item.date]) dateMap[item.date] = { date: item.date };
-                        dateMap[item.date].minutes = parseFloat(item.sum.toFixed(2));
-                    });
+                        return {
+                            date: item.date,
+                            minutes,
+                            calls,
+                            cost,
+                            avgCost: calls > 0 ? parseFloat((cost / calls).toFixed(2)) : 0
+                        };
+                    }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                    callsData.forEach((item: any) => {
-                        if (!dateMap[item.date]) dateMap[item.date] = { date: item.date };
-                        dateMap[item.date].calls = item.count;
-                    });
-
-                    costData.forEach((item: any) => {
-                        if (!dateMap[item.date]) dateMap[item.date] = { date: item.date };
-                        dateMap[item.date].cost = parseFloat(item.sum.toFixed(2));
-                        dateMap[item.date].avgCost = dateMap[item.date].calls > 0 ? parseFloat((item.sum / dateMap[item.date].calls).toFixed(2)) : 0;
-                    });
-
-                    const chartData = Object.values(dateMap).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
                     setData(chartData);
 
                     // Calcular totales
-                    const totalMinutes = chartData.reduce((acc: number, curr: any) => acc + (curr.minutes || 0), 0);
-                    const totalCalls = chartData.reduce((acc: number, curr: any) => acc + (curr.calls || 0), 0);
-                    const totalCost = chartData.reduce((acc: number, curr: any) => acc + (curr.cost || 0), 0);
+                    const totalMinutes = chartData.reduce((acc: number, curr: any) => acc + curr.minutes, 0);
+                    const totalCalls = chartData.reduce((acc: number, curr: any) => acc + curr.calls, 0);
+                    const totalCost = chartData.reduce((acc: number, curr: any) => acc + curr.cost, 0);
 
                     setTotals({
                         minutes: parseFloat(totalMinutes.toFixed(2)),
